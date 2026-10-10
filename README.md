@@ -1,38 +1,21 @@
 # recursive-prototyping
 
 Code for **"Recursive prototyping for computational behavioral analysis from egocentric
-videos"** (Perochon & Oudre, ICPR 2026). It turns unlabeled sequences of per-window video
-embeddings into interpretable symbolic strings in three steps:
+videos"** (Perochon & Oudre, ICPR 2026), which develop a framework for constructing interpretable symbolic representations of egocentric video captured during procedural tasks. The method combines:
 
-1. **Prototyping** — a recursive human-in-the-loop loop mines a compact vocabulary of visual
-   prototypes: cosine k-means proposes clusters, a person accepts or rejects each from a
-   visual probe image, poorly explained samples are re-clustered, and accepted centroids are
-   consolidated by hierarchical clustering.
-2. **Segmentation** — per-participant kernel change-point detection, with one penalty
-   calibrated across participants by a pooled slope heuristic.
-3. **Symbolization** — each window takes the prototype of its nearest centroid (or a
-   background symbol if it is too far), and each segment takes the majority symbol of its
-   central half.
+- **Recursive prototype discovery via iterative latent subspace refinement with minimal human feedback**: a recursive human-in-the-loop loop mines a compact vocabulary of visual prototypes: cosine k-means proposes clusters, a human annotator accepts or rejects each from a visual probe image, poorly explained samples are re-clustered, and accepted centroids are consolidated by hierarchical clustering
 
-The input is any precomputed embedding sequence (the paper uses D=1408 VideoMAE-v2 features);
-the clinical dataset is private, so everything here runs on a bundled synthetic generator.
+- **Vocabulary consolidation through hierarchical clustering to reduce redundancy**
 
-This page goes from a first run to a real annotation run, in that order:
-[install](#install) → [quickstart](#quickstart) → [reading the result](#reading-the-result) →
-[guided tour](#guided-tour) → [repository map](#repository-map) →
-[your own data](#running-on-your-own-data) →
-[a person in the loop](#annotating-with-a-person-in-the-loop).
+- **Unsupervised temporal segmentation using kernel-based change-point detection**
 
-### Terms used throughout
+- **Symbolization**: each window takes the prototype of its nearest centroid (or a background symbol if it is too far), and each segment takes the majority symbol of its central half.
 
-| Term | Meaning |
-|---|---|
-| window | One embedding vector, computed from a short clip of video |
-| prototype | One entry of the vocabulary: a visual concept, stored as a unit-norm vector |
-| centroid | A k-means cluster centre; accepted centroids are merged into prototypes |
-| visual probe image | The image a person judges a cluster from: its nearest and furthest frames ("probe image" for short) |
-| residual | The windows not yet explained by an accepted centroid, clustered again next round |
-| background | Windows too far from every prototype; they get the symbol `-1` |
+The resulting symbolic representations are used in the paper to explore fine-grained behavioral analysis and cross-subject comparison without requiring dense ground-truth annotations. The input is any precomputed embedding sequence (the paper uses D=1408 VideoMAE-v2 features [1]); the clinical dataset is private, so everything here runs on a bundled synthetic generator.
+
+
+[1] Limin Wang, undefined., et al, "VideoMAE V2: Scaling Video Masked Autoencoders with Dual Masking," 2023.
+
 
 ## Install
 
@@ -74,28 +57,6 @@ result = run_full_pipeline(
 print(result.vocabulary.shape, result.participants["synth_000"].symbols.tolist())
 ```
 
-### Reading the result
-
-The last line prints something like `(8, 32) [5, 5, 6, 4]`:
-
-- `result.vocabulary` has one row per prototype: here 8 prototypes of dimension 32.
-- `result.participants[pid].symbols` is that participant's symbolic string, one symbol per
-  segment. A symbol is a row index of the vocabulary, or `-1` for background.
-- `result.participants[pid].cpts` holds the segment boundaries `[0, t_1, ..., T]` that pair
-  with `symbols`, and `window_symbols` the same string expanded to one symbol per window.
-
-Everything is also written to `outputs/demo_run/`:
-
-| File | Content |
-|---|---|
-| `vocabulary.npy` | The prototypes, `[G, D]` |
-| `accepted_centroids.npy` | The accepted centroids windows are assigned to, `[K, D]` |
-| `centroid_to_prototype.npy` | For each accepted centroid, the row of its prototype |
-| `symbols.npz` | Change points and symbols of every participant |
-| `calibration_summary.json` | Segmentation penalty and kernel bandwidth per participant |
-| `*_config.json` | The three configurations the run used |
-| `refinement/` | The probe image of every cluster, the labels given, and the loop state |
-
 ## Guided tour
 
 1. [notebooks/demo_end_to_end.ipynb](notebooks/demo_end_to_end.ipynb) runs the same pipeline
@@ -130,7 +91,7 @@ Feature extraction and the paper's evaluation are not part of this repository.
 
 ## Running on your own data
 
-`run_full_pipeline` needs three things from you:
+`run_full_pipeline` needs three things:
 
 - **Embeddings**: a dict `participant_id -> array [T, D]`, one row per window in temporal
   order.
