@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "recursive-prototyping"
+version = "0.0.1"
+description = "Recursive prototyping for computational behavioral analysis from egocentric videos (ICPR 2026)"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "scikit-learn",
+    "faiss-cpu",
+    "ruptures",
+    "statsmodels",
+    "pyarrow",
+    "matplotlib",
+    "pillow",
+]
+
+[project.optional-dependencies]
+annotation = [
+    "pigeon-jupyter",
+    "ipywidgets",
+]
+notebook = [
+    "jupyter",
+    "ipykernel",
+]
+dev = [
+    "pytest",
+    "pytest-cov",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/recursive_prototyping"]
